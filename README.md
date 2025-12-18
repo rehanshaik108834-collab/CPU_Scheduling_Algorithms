@@ -60,11 +60,6 @@ Inline example (3 processes):
 ```
 This indicates 3 processes with burst times 5,3,2 and arrival times 0,0,1 and RR quantum 2.
 
-Files in this repo
-- `main.cpp` — main program
-- `scheduler.exe` — compiled binary (if present)
-- Several `test_*.txt` files with example inputs
-
 Quick commands
 
 ```powershell
