@@ -80,6 +80,34 @@ void printGanttChart(const vector<Timeline>& timeline, int total_time)
     cout << time_line << "\n";
 }
 
+struct QueueState {
+    int time;
+    vector<int> queue;
+    int cpu_process;
+};
+
+void printReadyQueueTimeline(const vector<QueueState>& states, int total_time)
+{
+    if (states.empty()) return;
+    
+    cout << "\nReady Queue Timeline (Compact View):\n";
+    for (const auto& state : states)
+    {
+        cout << "Time " << state.time << ": [";
+        for (int i = 0; i < state.queue.size(); ++i)
+        {
+            if (i > 0) cout << ", ";
+            cout << "P" << state.queue[i];
+        }
+        cout << "]";
+        if (state.cpu_process > 0)
+            cout << " → CPU: P" << state.cpu_process;
+        else
+            cout << " → Done";
+        cout << "\n";
+    }
+}
+
 vector<Timeline> fcfs_findavgTime(const vector<int>& bt, const vector<int>& at)
 {
     int n = (int)bt.size();
@@ -125,6 +153,16 @@ vector<Timeline> fcfs_findavgTime(const vector<int>& bt, const vector<int>& at)
     return timeline;
 }
 
+// Helper to extract queue from std::queue
+vector<int> getQueueContents(queue<int> q) {
+    vector<int> result;
+    while (!q.empty()) {
+        result.push_back(q.front() + 1);
+        q.pop();
+    }
+    return result;
+}
+
 vector<Timeline> rr_findavgTime(const vector<int>& bt, const vector<int>& at, int quantum)
 {
     int n = (int)bt.size();
@@ -132,6 +170,7 @@ vector<Timeline> rr_findavgTime(const vector<int>& bt, const vector<int>& at, in
     vector<int> wt(n, 0), tat(n, 0);
     vector<bool> finished(n, false), in_queue(n, false);
     vector<Timeline> timeline;
+    vector<QueueState> queue_states;
 
     queue<int> q;
     int t = 0; // current time
@@ -165,6 +204,9 @@ vector<Timeline> rr_findavgTime(const vector<int>& bt, const vector<int>& at, in
             for (int i = 0; i < n; ++i) if (at[i] <= t && !finished[i] && !in_queue[i]) { q.push(i); in_queue[i] = true; }
             continue;
         }
+
+        // Record queue state before processing
+        queue_states.push_back({t, getQueueContents(q), 0});
 
         int i = q.front(); q.pop(); in_queue[i] = false;
         int exec = min(quantum, rem_bt[i]);
@@ -203,6 +245,9 @@ vector<Timeline> rr_findavgTime(const vector<int>& bt, const vector<int>& at, in
         }
     }
 
+    // Add final state
+    queue_states.push_back({t, {}, 0});
+
     int total_wt = 0, total_tat = 0;
     cout << setw(8) << "Process" << setw(10) << "Arrival" << setw(8) << "Burst" << setw(12) << "Waiting" << setw(14) << "Turnaround" << '\n';
     for (int i = 0; i < n; ++i)
@@ -214,6 +259,8 @@ vector<Timeline> rr_findavgTime(const vector<int>& bt, const vector<int>& at, in
     cout << fixed << setprecision(2);
     cout << "Average waiting time = " << (double)total_wt / n << '\n';
     cout << "Average turnaround time = " << (double)total_tat / n << '\n';
+    
+    printReadyQueueTimeline(queue_states, timeline.empty() ? 0 : timeline.back().end_time);
     
     return timeline;
 }
