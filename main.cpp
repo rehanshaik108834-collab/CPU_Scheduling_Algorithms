@@ -99,11 +99,11 @@ void printReadyQueueTimeline(const vector<QueueState>& states, int total_time)
             if (i > 0) cout << ", ";
             cout << "P" << state.queue[i];
         }
-        cout << "]";
+        cout << "] -> ";
         if (state.cpu_process > 0)
-            cout << " → CPU: P" << state.cpu_process;
+            cout << "CPU: P" << state.cpu_process;
         else
-            cout << " → Done";
+            cout << "Done";
         cout << "\n";
     }
 }
@@ -205,8 +205,14 @@ vector<Timeline> rr_findavgTime(const vector<int>& bt, const vector<int>& at, in
             continue;
         }
 
-        // Record queue state before processing
-        queue_states.push_back({t, getQueueContents(q), 0});
+        // Record queue state before processing - peek at front to see which process will execute
+        int front_proc = q.front();
+        auto curr_q = getQueueContents(q);
+        // Remove first element from display since it's going to CPU
+        if (!curr_q.empty()) {
+            curr_q.erase(curr_q.begin());
+        }
+        queue_states.push_back({t, curr_q, front_proc + 1});
 
         int i = q.front(); q.pop(); in_queue[i] = false;
         int exec = min(quantum, rem_bt[i]);
@@ -335,6 +341,7 @@ vector<Timeline> srt_findavgTime(const vector<int>& bt, const vector<int>& at)
     vector<int> wt(n, 0), tat(n, 0);
     vector<bool> completed(n, false);
     vector<Timeline> timeline;
+    vector<QueueState> queue_states;
     
     int current_time = 0;
     int processes_done = 0;
@@ -368,6 +375,19 @@ vector<Timeline> srt_findavgTime(const vector<int>& bt, const vector<int>& at)
             continue;
         }
         
+        // Build ready queue (all arrived processes except the one running)
+        vector<int> ready_queue;
+        for (int i = 0; i < n; ++i)
+        {
+            if (i != best && !completed[i] && at[i] <= current_time && rem_bt[i] > 0)
+            {
+                ready_queue.push_back(i + 1);
+            }
+        }
+        
+        // Record queue state
+        queue_states.push_back({current_time, ready_queue, best + 1});
+        
         // Execute 1 unit of time and check for preemption
         int start = current_time;
         rem_bt[best]--;
@@ -383,6 +403,9 @@ vector<Timeline> srt_findavgTime(const vector<int>& bt, const vector<int>& at)
         }
     }
     
+    // Add final state
+    queue_states.push_back({current_time, {}, 0});
+    
     int total_wt = 0, total_tat = 0;
     cout << setw(8) << "Process" << setw(10) << "Arrival" << setw(8) << "Burst" << setw(12) << "Waiting" << setw(14) << "Turnaround" << '\n';
     for (int i = 0; i < n; ++i)
@@ -394,6 +417,8 @@ vector<Timeline> srt_findavgTime(const vector<int>& bt, const vector<int>& at)
     cout << fixed << setprecision(2);
     cout << "Average waiting time = " << (double)total_wt / n << '\n';
     cout << "Average turnaround time = " << (double)total_tat / n << '\n';
+    
+    printReadyQueueTimeline(queue_states, timeline.empty() ? 0 : timeline.back().end_time);
     
     return timeline;
 }
