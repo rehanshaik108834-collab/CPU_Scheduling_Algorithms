@@ -65,10 +65,6 @@ Files in this repo
 - `scheduler.exe` — compiled binary (if present)
 - Several `test_*.txt` files with example inputs
 
-Notes
-- The program prints a Gantt chart and a ready-queue timeline (for RR and SRT) showing the queue contents at each scheduling decision and which process is on the CPU.
-- The `README.md` is intentionally concise — tell me if you want more details (API, diagrams, more examples).
-
 Quick commands
 
 ```powershell
