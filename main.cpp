@@ -345,7 +345,6 @@ vector<Timeline> srt_findavgTime(const vector<int>& bt, const vector<int>& at)
             {
                 if (!completed[i]) next_at = min(next_at, at[i]);
             }
-            // Add idle time to timeline
             timeline.push_back({0, current_time, next_at});
             current_time = next_at;
             continue;
