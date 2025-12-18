@@ -1,4 +1,4 @@
-// Unified C++ program that supports FCFS and Round Robin (RR)
+
 #include <iostream>
 #include <vector>
 #include <iomanip>
@@ -19,24 +19,21 @@ void printGanttChart(const vector<Timeline>& timeline, int total_time)
     if (timeline.empty()) return;
     
     cout << "\nGantt Chart:\n";
-    
-    // Consolidate consecutive segments of the same process
     vector<Timeline> consolidated;
     for (const auto& t : timeline)
     {
         if (!consolidated.empty() && consolidated.back().process_id == t.process_id)
         {
-            // Merge with previous segment
+
             consolidated.back().end_time = t.end_time;
         }
         else
         {
-            // Add new segment
+
             consolidated.push_back(t);
         }
     }
-    
-    // Build the process line
+
     string process_line = "| ";
     for (const auto& t : consolidated)
     {
@@ -46,29 +43,24 @@ void printGanttChart(const vector<Timeline>& timeline, int total_time)
             process_line += "P" + to_string(t.process_id) + " | ";
     }
     cout << process_line << "\n";
-    
-    // Build time line - place times centered under each pipe
+
     string time_line(process_line.length(), ' ');
-    
-    // Find all pipe positions and place times centered under them
+
     vector<int> pipe_positions;
     for (int i = 0; i < process_line.length(); ++i)
     {
         if (process_line[i] == '|')
             pipe_positions.push_back(i);
     }
-    
-    // Place times under each pipe
+
     for (int i = 0; i < pipe_positions.size(); ++i)
     {
         string time_str = to_string(i == 0 ? 0 : consolidated[i - 1].end_time);
         int pipe_pos = pipe_positions[i];
-        
-        // Center the time under the pipe
+
         int time_len = time_str.length();
         int center_pos = pipe_pos - time_len / 2;
-        
-        // Place the time string
+
         for (int j = 0; j < time_len; ++j)
         {
             int pos = center_pos + j;
@@ -114,7 +106,6 @@ vector<Timeline> fcfs_findavgTime(const vector<int>& bt, const vector<int>& at)
     vector<int> wt(n, 0), tat(n, 0);
     vector<Timeline> timeline;
 
-    // order processes by arrival time (stable)
     vector<int> idx(n);
     for (int i = 0; i < n; ++i) idx[i] = i;
     stable_sort(idx.begin(), idx.end(), [&](int a, int b){
@@ -127,7 +118,7 @@ vector<Timeline> fcfs_findavgTime(const vector<int>& bt, const vector<int>& at)
     {
         int i = idx[k];
         if (current_time < at[i]) {
-            // Add idle time to timeline
+
             timeline.push_back({0, current_time, at[i]});
             current_time = at[i];
         }
@@ -153,7 +144,6 @@ vector<Timeline> fcfs_findavgTime(const vector<int>& bt, const vector<int>& at)
     return timeline;
 }
 
-// Helper to extract queue from std::queue
 vector<int> getQueueContents(queue<int> q) {
     vector<int> result;
     while (!q.empty()) {
@@ -173,16 +163,14 @@ vector<Timeline> rr_findavgTime(const vector<int>& bt, const vector<int>& at, in
     vector<QueueState> queue_states;
 
     queue<int> q;
-    int t = 0; // current time
+    int t = 0;
     int completed = 0;
 
-    // push processes that have arrived at time 0
     for (int i = 0; i < n; ++i)
     {
         if (at[i] <= t && !in_queue[i]) { q.push(i); in_queue[i] = true; }
     }
 
-    // if nothing has arrived at t=0, jump to earliest arrival and add idle
     if (q.empty())
     {
         int next_at = INT_MAX;
@@ -196,7 +184,6 @@ vector<Timeline> rr_findavgTime(const vector<int>& bt, const vector<int>& at, in
     {
         if (q.empty())
         {
-            // advance to next arrival
             int next_at = INT_MAX;
             for (int i = 0; i < n; ++i) if (!finished[i] && !in_queue[i]) next_at = min(next_at, at[i]);
             timeline.push_back({0, t, next_at});
@@ -205,10 +192,8 @@ vector<Timeline> rr_findavgTime(const vector<int>& bt, const vector<int>& at, in
             continue;
         }
 
-        // Record queue state before processing - peek at front to see which process will execute
         int front_proc = q.front();
         auto curr_q = getQueueContents(q);
-        // Remove first element from display since it's going to CPU
         if (!curr_q.empty()) {
             curr_q.erase(curr_q.begin());
         }
@@ -217,14 +202,12 @@ vector<Timeline> rr_findavgTime(const vector<int>& bt, const vector<int>& at, in
         int i = q.front(); q.pop(); in_queue[i] = false;
         int exec = min(quantum, rem_bt[i]);
         int start = t;
-        
-        // Execute time unit by unit
+
         for (int unit = 0; unit < exec; ++unit)
         {
             rem_bt[i]--;
             t++;
-            
-            // Check for new arrivals at this time
+
             for (int j = 0; j < n; ++j)
             {
                 if (!finished[j] && !in_queue[j] && at[j] == t)
@@ -251,7 +234,6 @@ vector<Timeline> rr_findavgTime(const vector<int>& bt, const vector<int>& at, in
         }
     }
 
-    // Add final state
     queue_states.push_back({t, {}, 0});
 
     int total_wt = 0, total_tat = 0;
@@ -285,8 +267,7 @@ vector<Timeline> spn_findavgTime(const vector<int>& bt, const vector<int>& at)
     {
         int best = -1;
         int min_burst = INT_MAX;
-        
-        // Find process with shortest burst time that has arrived
+
         for (int i = 0; i < n; ++i)
         {
             if (!completed[i] && at[i] <= current_time && bt[i] < min_burst)
@@ -295,8 +276,7 @@ vector<Timeline> spn_findavgTime(const vector<int>& bt, const vector<int>& at)
                 min_burst = bt[i];
             }
         }
-        
-        // If no process available, advance to next arrival
+
         if (best == -1)
         {
             int next_at = INT_MAX;
@@ -304,7 +284,6 @@ vector<Timeline> spn_findavgTime(const vector<int>& bt, const vector<int>& at)
             {
                 if (!completed[i]) next_at = min(next_at, at[i]);
             }
-            // Add idle time to timeline
             timeline.push_back({0, current_time, next_at});
             current_time = next_at;
             continue;
@@ -350,8 +329,7 @@ vector<Timeline> srt_findavgTime(const vector<int>& bt, const vector<int>& at)
     {
         int best = -1;
         int min_remaining = INT_MAX;
-        
-        // Find process with shortest remaining time that has arrived
+
         for (int i = 0; i < n; ++i)
         {
             if (!completed[i] && at[i] <= current_time && rem_bt[i] < min_remaining)
@@ -360,8 +338,6 @@ vector<Timeline> srt_findavgTime(const vector<int>& bt, const vector<int>& at)
                 min_remaining = rem_bt[i];
             }
         }
-        
-        // If no process available, advance to next arrival
         if (best == -1)
         {
             int next_at = INT_MAX;
@@ -374,8 +350,6 @@ vector<Timeline> srt_findavgTime(const vector<int>& bt, const vector<int>& at)
             current_time = next_at;
             continue;
         }
-        
-        // Build ready queue (all arrived processes except the one running)
         vector<int> ready_queue;
         for (int i = 0; i < n; ++i)
         {
@@ -384,11 +358,7 @@ vector<Timeline> srt_findavgTime(const vector<int>& bt, const vector<int>& at)
                 ready_queue.push_back(i + 1);
             }
         }
-        
-        // Record queue state
         queue_states.push_back({current_time, ready_queue, best + 1});
-        
-        // Execute 1 unit of time and check for preemption
         int start = current_time;
         rem_bt[best]--;
         current_time++;
@@ -402,8 +372,7 @@ vector<Timeline> srt_findavgTime(const vector<int>& bt, const vector<int>& at)
             processes_done++;
         }
     }
-    
-    // Add final state
+
     queue_states.push_back({current_time, {}, 0});
     
     int total_wt = 0, total_tat = 0;
