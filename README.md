@@ -78,5 +78,3 @@ g++ -std=c++11 main.cpp -o scheduler.exe
 Get-Content test_inline.txt | .\scheduler.exe
 ```
 
-License & Contact
-- Add a license as you prefer. For questions or changes, open an issue or contact the repo owner.
